@@ -59,7 +59,23 @@ end
 
 end
 
-
+using StableRNGs
+using Test
+@tiny_gibbs function m()
+    a ~ Normal(0, 1)
+    z = sin(a)
+    b ~ Normal(z, z^2)
+end
+function m_test(rng, state)
+    a = rand(rng, Normal(0, 1))
+    z = sin(a)
+    b = rand(rng, Normal(z, z^2))
+    return Dict(:a => a, :b => b)
+end
+state = Dict(:a => 1.0, :b => 1.0)
+macro_state = m(StableRNG(123), state)
+test_state = m_test(StableRNG(123), state)
+@test test_state == macro_state
 
 
 @tiny_gibbs function m()
