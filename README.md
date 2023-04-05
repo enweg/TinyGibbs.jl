@@ -40,14 +40,19 @@ $$
 
 we then have the following rules: 
 
-> 💡 Rules for multivariate normal distribution
-> $$
-> X \sim N(\mu_X, \Sigma_{XX})
-> $$
-> and 
-> $$ 
-> Y|X \sim N(\mu_Y + \Sigma_{YX}\Sigma_{XX}^{-1}(X-\mu_x),\quad \Sigma_{YY}-\Sigma_{YX}\Sigma_{XX}^{-1}\Sigma_{XY})
-> $$
+💡 **Rules for multivariate normal distribution**
+
+$$
+X \sim N(\mu_X, \Sigma_{XX})
+$$
+
+and 
+
+$$ 
+Y|X \sim N(\mu_Y + \Sigma_{YX}\Sigma_{XX}^{-1}(X-\mu_x),\quad \Sigma_{YY}-\Sigma_{YX}\Sigma_{XX}^{-1}\Sigma_{XY})
+$$
+
+---
 
 We can therefore create the following Gibbs sampling procedure
 
