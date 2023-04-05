@@ -169,11 +169,6 @@ function AbstractMCMC.bundle_samples(
         array = _make_chain_array(samples)
         symbols = _make_chain_symbols(samples[1])
         return MCMCChains.Chains(array, symbols)
-    elseif isa(samples[1], Vector{<:Dict})
-        arrays = [_make_chain_array(chain) for chain in samples]
-        array = cat(arrays...; dims = 3)
-        symbols = _make_chain_symbols(samples[1][1])
-        return MCMCChains.Chains(array, symbols)
     else
         throw(ErrorException("Samples are neither a Vector{<:Dict} nor a Vector{Vector{<:Dict}}"))
     end
@@ -186,23 +181,29 @@ function AbstractMCMC.bundle_samples(
     if isa(samples[1], Dict)
         symbols = keys(samples[1])
         for s in symbols
+            type = eltype(samples[1][s])
             nd = ndims(samples[1][s])
-            vals = [samples[i][s] for i in eachindex(samples)]
-            vals = cat(vals...; dims = nd+1)
-            vals = reshape(vals, (size(vals)..., 1))
+            vals = Array{type}(undef, (size(samples[1][s])..., length(samples)))
+            for i in eachindex(samples)
+                selectdim(vals, nd+1, i) .= samples[i][s]
+            end
             chain[s] = vals
-        end
-    elseif isa(samples[1], Vector{<:Dict})
-        symbols = keys(samples[1][1])
-        dicts = [AbstractMCMC.bundle_samples(s, model, sampler, Any, Dict; kwargs...) for s in samples]
-        for s in symbols
-            nd = ndims(dicts[1][s])
-            chain[s] = cat([dropdims(d[s]; dims=nd) for d in dicts]...; dims=nd)
         end
     else
         throw(ErrorException("Samples are neither a Vector{<:Dict} nor a Vector{Vector{<:Dict}}"))
     end
 
+    return chain
+end
+function AbstractMCMC.chainsstack(c::Vector{<:Dict})
+    chain = Dict()
+    symbols = keys(c[1])
+    for s in symbols 
+        vals = [c[i][s] for i in eachindex(c)]
+        nd = ndims(c[1][s])
+        vals = cat(vals...; dims=nd+1)
+        chain[s] = vals
+    end
     return chain
 end
 
