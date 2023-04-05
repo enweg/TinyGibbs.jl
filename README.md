@@ -122,3 +122,9 @@ plot!(minimum(chain_parallel[:x]):0.01:maximum(chain_parallel[:x]), x->pdf(Norma
 
 - *TinyGibbs* does not currently support the use of MH or HMC within Gibbs. A natrual next step would be to make this possible
 - *TinyGibbs* does not currently support keeping track of any other quantities than those that are being sampled. This can be changed if the need ever comes up. A hack around this would also be to have a deterministic distribution. 
+
+## TODOS
+
+- [ ] Fill in [compats]
+- [ ] Publish
+- [ ] Documentation
