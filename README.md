@@ -1,7 +1,7 @@
 # TinyGibbs
 
-[![Stable](https://img.shields.io/badge/docs-stable-blue.svg)](https://enweg.github.io/TinyGibbs.jl/stable/)
-[![Dev](https://img.shields.io/badge/docs-dev-blue.svg)](https://enweg.github.io/TinyGibbs.jl/dev/)
+<!-- [![Stable](https://img.shields.io/badge/docs-stable-blue.svg)](https://enweg.github.io/TinyGibbs.jl/stable/)
+[![Dev](https://img.shields.io/badge/docs-dev-blue.svg)](https://enweg.github.io/TinyGibbs.jl/dev/) -->
 [![Build Status](https://github.com/enweg/TinyGibbs.jl/actions/workflows/CI.yml/badge.svg?branch=main)](https://github.com/enweg/TinyGibbs.jl/actions/workflows/CI.yml?query=branch%3Amain)
 
 *TinyGibbs* is a small Gibbs sampler that makes use of the *AbstractMCMC* interface. It therefore allows for efficient Gibbs sampling including parallel sampling of multiple chains. Additionally, *TinyGibbs* can collect samples in two ways: (1) as a dictionary of tensors where each tensor or (2) as a *MCMCChains.Chains* type. Therefore, all the funcionality of *MCMCChains* can be exploited with *TinyGibbs*. 
