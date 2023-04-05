@@ -6,6 +6,7 @@ using Test
 using LinearAlgebra
 using MCMCChains
 using Statistics
+using MCMCDiagnosticTools
 
 @testset "TinyGibbs.jl" begin
     """
@@ -107,8 +108,8 @@ using Statistics
     sampler = m4(initial_values, mu, Σ)
     chain = sample(rng, sampler, 1_000; chain_type=MCMCChains.Chains)
 
-    mcse_mean = MCMCChains.mcse(reshape(chain[:x].data, (size(chain[:x].data)..., 1)); kind=Statistics.mean)[1]
-    mcse_std = MCMCChains.mcse(reshape(chain[:x].data, (size(chain[:x].data)..., 1)); kind=Statistics.std)[1]
+    mcse_mean = MCMCDiagnosticTools.mcse(reshape(chain[:x].data, (size(chain[:x].data)..., 1)); kind=Statistics.mean)[1]
+    mcse_std = MCMCDiagnosticTools.mcse(reshape(chain[:x].data, (size(chain[:x].data)..., 1)); kind=Statistics.std)[1]
 
     abs_diff_mean = abs(mean(chain[:x]) - mu[1])
     delta_mean = abs_diff_mean/mcse_mean
