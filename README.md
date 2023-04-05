@@ -128,6 +128,4 @@ plot!(minimum(chain_parallel[:x]):0.01:maximum(chain_parallel[:x]), x->pdf(Norma
 
 ## TODOS
 
-- [ ] Fill in [compats]
-- [ ] Publish
 - [ ] Documentation
