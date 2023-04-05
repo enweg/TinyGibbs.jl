@@ -101,7 +101,7 @@ using Statistics
         x ~ Normal(mx, sqrt(Σx))
     end
     rng = StableRNG(123)
-    mu = rand(rng, MultivariateNormal(30*randn(3), I))
+    mu = rand(rng, MultivariateNormal(30*randn(rng, 3), I))
     Σ = rand(rng, Wishart(4, diagm(ones(3))))
     initial_values = Dict(:x => mu[1], :y => mu[2:end])
     sampler = m4(initial_values, mu, Σ)
