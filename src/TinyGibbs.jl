@@ -7,6 +7,7 @@ using Random
 using MacroTools
 using Distributions
 import StatsBase
+using MCMCChains
 
 struct TinyGibbsSampler <: AbstractMCMC.AbstractSampler
     initial_values::Dict
@@ -124,6 +125,85 @@ function _replace_variables(expr, vars)
         end
     end
     return expr
+end
+
+_vec_or_scalar(x::Union{AbstractArray, Real}) = isa(x, AbstractArray) ? vec(x) : x
+function _make_chain_array(samples::Vector{<:Dict})
+    nsamples = length(samples)
+    nvars = sum(length.(values(samples[1])))
+    types = eltype.(values(samples[1]))
+    # We need to somehow make sure that we always get the values in the correct
+    # order. This is not guaranteed by `values`.
+    k = collect(keys(samples[1]))
+    if !all(types .== types[1])
+        throw(ErrorException("Types of all elements in the chain must be the same"))
+    end
+    chain = Array{types[1]}(undef, nsamples, nvars)
+    for s in 1:nsamples
+        chain[s, :] .= vcat(_vec_or_scalar.([samples[s][kk] for kk in k])...)
+    end
+    return chain
+end
+function _make_array_symbols(key::Symbol, val::AbstractArray)
+    attach = [string(ci.I) for ci in CartesianIndices(val)]
+    attach = replace.(attach, "(" => "[", ")" => "]")
+    attach = vec(attach)
+    return Symbol.(string(key) .* attach)
+end
+function _make_chain_symbols(sample::Dict)
+    symbols = Symbol[]
+    for (key, val) in sample
+        if isa(val, AbstractArray)
+            symbols = vcat(symbols, _make_array_symbols(key, val))
+        else
+            push!(symbols, key)
+        end
+    end
+    return symbols
+end
+function AbstractMCMC.bundle_samples(
+    samples, model::TinyGibbsModel, ::TinyGibbsSampler, ::Any, ::Type{Chains}; kwargs...
+)
+    # Chain is of dimensions samples×var×chains
+    if isa(samples[1], Dict)
+        array = _make_chain_array(samples)
+        symbols = _make_chain_symbols(samples[1])
+        return MCMCChains.Chains(array, symbols)
+    elseif isa(samples[1], Vector{<:Dict})
+        arrays = [_make_chain_array(chain) for chain in samples]
+        array = cat(arrays...; dims = 3)
+        symbols = _make_chain_symbols(samples[1][1])
+        return MCMCChains.Chains(array, symbols)
+    else
+        throw(ErrorException("Samples are neither a Vector{<:Dict} nor a Vector{Vector{<:Dict}}"))
+    end
+end
+
+function AbstractMCMC.bundle_samples(
+    samples, model::TinyGibbsModel, sampler::TinyGibbsSampler, ::Any, ::Type{Dict}; kwargs...
+)
+    chain = Dict()
+    if isa(samples[1], Dict)
+        symbols = keys(samples[1])
+        for s in symbols
+            nd = ndims(samples[1][s])
+            vals = [samples[i][s] for i in eachindex(samples)]
+            vals = cat(vals...; dims = nd+1)
+            vals = reshape(vals, (size(vals)..., 1))
+            chain[s] = vals
+        end
+    elseif isa(samples[1], Vector{<:Dict})
+        symbols = keys(samples[1][1])
+        dicts = [AbstractMCMC.bundle_samples(s, model, sampler, Any, Dict; kwargs...) for s in samples]
+        for s in symbols
+            nd = ndims(dicts[1][s])
+            chain[s] = cat([dropdims(d[s]; dims=nd) for d in dicts]...; dims=nd)
+        end
+    else
+        throw(ErrorException("Samples are neither a Vector{<:Dict} nor a Vector{Vector{<:Dict}}"))
+    end
+
+    return chain
 end
 
 end # module
