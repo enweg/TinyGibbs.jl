@@ -3,6 +3,9 @@ using StableRNGs
 using Random
 using Distributions
 using Test
+using LinearAlgebra
+using MCMCChains
+using Statistics
 
 @testset "TinyGibbs.jl" begin
     """
@@ -78,4 +81,44 @@ using Test
         push!(test_chain, state)
     end
     @test all(test_chain .== macro_chain)
+
+
+    """ 
+    Sampling in a Gibbs way from a multivariate normal and checking if marginal
+    is okay.
+    Test is motivated by: 
+    https://github.com/stan-dev/stan/wiki/Testing:-Samplers
+    """
+    @tiny_gibbs function m4(mu, Σ)
+        # Drawing y: here a vector of all elements except the first
+        my = mu[2:end] + 1/Σ[1, 1]*Σ[2:end, 1]*(x - mu[1])
+        Σy = Σ[2:end, 2:end] - 1/Σ[1, 1]*Σ[2:end, 1]*Σ[1, 2:end]'
+        y ~ MultivariateNormal(my, Hermitian(Σy))
+
+        # drawing the first element conditional on the others
+        mx = mu[1] + Σ[1, 2:end]'*inv(Σ[2:end, 2:end])*(y - mu[2:end])
+        Σx = Σ[1, 1] - Σ[1, 2:end]'*inv(Σ[2:end, 2:end])*Σ[2:end, 1]
+        x ~ Normal(mx, sqrt(Σx))
+    end
+    rng = StableRNG(123)
+    mu = rand(rng, MultivariateNormal(30*randn(3), I))
+    Σ = rand(rng, Wishart(4, diagm(ones(3))))
+    initial_values = Dict(:x => mu[1], :y => mu[2:end])
+    sampler = m4(initial_values, mu, Σ)
+    chain = sample(rng, sampler, 1_000; chain_type=MCMCChains.Chains)
+
+    mcse_mean = MCMCChains.mcse(reshape(chain[:x].data, (size(chain[:x].data)..., 1)); kind=Statistics.mean)[1]
+    mcse_std = MCMCChains.mcse(reshape(chain[:x].data, (size(chain[:x].data)..., 1)); kind=Statistics.std)[1]
+
+    abs_diff_mean = abs(mean(chain[:x]) - mu[1])
+    delta_mean = abs_diff_mean/mcse_mean
+    p_value_mean = cdf(Normal(0, 1), -delta_mean)*2
+    @info "Mean --> abs_diff=$abs_diff_mean, p_value=$p_value_mean"
+    @test p_value_mean > 0.05
+
+    abs_diff_std = abs(std(chain[:x]) - sqrt(Σ[1,1]))
+    delta_std = abs_diff_std/mcse_std
+    p_value_std =cdf(Normal(0, 1), -delta_std)*2
+    @info "STD --> abs_diff=$abs_diff_std, p_value=$p_value_std"
+    @test p_value_std > 0.05
 end
